@@ -29,17 +29,9 @@ const fetchUser = async (userId) => {
     .then((res) => res.data);
 };
 
-const getPostUsers = () => {
-  const usersLoaded = {};
-
-  return async (post) => {
-    const userLoaded = usersLoaded[post.userId];
-
-    if (userLoaded) return { ...post, user: userLoaded };
-
-    const user = await fetchUser(post.userId);
-
-    usersLoaded[user.id] = user;
+const getPostUsers = (users = []) => {
+  return (post) => {
+    const user = users.find((user) => user.id === post.userId);
 
     return { ...post, user };
   };
@@ -48,9 +40,12 @@ const getPostUsers = () => {
 const fetchPaginate = async () => {
   const posts = await getPostsWithComments();
 
-  const promises = posts.map(getPostUsers());
+  const usersIds = [...new Set(posts.map((post) => post.userId))];
+  const promises = usersIds.map(fetchUser);
 
-  const finalResponse = await Promise.all(promises);
+  const users = await Promise.all(promises);
+
+  const finalResponse = posts.map(getPostUsers(users));
 
   return finalResponse;
 };
