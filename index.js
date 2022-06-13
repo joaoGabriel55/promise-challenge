@@ -1,19 +1,12 @@
-const { default: axios } = require("axios");
-
-const POSTS_API = "https://jsonplaceholder.typicode.com/posts";
+const { fetchComments, fetchPosts, fetchUser } = require("./services/index.js");
 
 const getPostsWithComments = async (page = 1, posts = []) => {
-  const params = { _page: page, _limit: 20 };
-  const newPosts = await axios
-    .get(POSTS_API, { params })
-    .then((res) => res.data);
+  const newPosts = await fetchPosts(page);
 
   if (newPosts.length === 0) return posts;
 
   const promises = newPosts.map(async (post) => {
-    const comments = await axios
-      .get(`${POSTS_API}/${post.id}/comments`)
-      .then((res) => res.data);
+    const comments = await fetchComments(post.id);
 
     return { ...post, comments };
   });
@@ -23,15 +16,11 @@ const getPostsWithComments = async (page = 1, posts = []) => {
   return getPostsWithComments(page + 1, [...posts, ...postsWithComments]);
 };
 
-const fetchUser = async (userId) => {
-  return await axios
-    .get(`https://jsonplaceholder.typicode.com/users/${userId}`)
-    .then((res) => res.data);
-};
-
 const getPostUsers = (users = []) => {
   return (post) => {
     const user = users.find((user) => user.id === post.userId);
+
+    if (!user) return post;
 
     return { ...post, user };
   };
@@ -49,7 +38,5 @@ const fetchPaginate = async () => {
 
   return finalResponse;
 };
-
-fetchPaginate();
 
 module.exports = { fetchPaginate };
